@@ -12,6 +12,11 @@ using namespace __llvm_libc;
 uint32_t lane_size = gpu::get_lane_size();
 #pragma omp declare target to(lane_size)
 
+int foo() {
+  printf("Hello world\n");
+  return -1;
+}
+
 int main() {
 #pragma omp target update from(lane_size)
 
@@ -25,19 +30,16 @@ int main() {
 #pragma omp target is_device_ptr(shared_ptr)
   { client.reset(rpc::DEFAULT_PORT_COUNT, lane_size, shared_ptr); }
 
+  omp_region_id = reinterpret_cast<void *>(&foo);
+#pragma omp target update to(omp_region_id)
+
   std::promise<void> run;
   std::thread st(run_server, run.get_future());
   st.detach();
 
-  uint64_t result = 0;
-#pragma omp target map(from : result)
-  {
-    rpc::Client::Port port = client.open<0>();
-    port.send([&](rpc::Buffer *buffer) { buffer->data[0] = 0xdeadbeef; });
-    port.recv([&](rpc::Buffer *buffer) { result = buffer->data[0]; });
-  }
+#pragma omp target
+  run_client();
 
-  printf("Client got: %lx\n", result);
   run.set_value();
   omp_free(shared_ptr, llvm_omp_target_shared_mem_alloc);
 }

@@ -4,7 +4,8 @@ OpenMP reverse offloading using shared memory remote procedure calls
 
 This repository is a demo of how we can achieve reverse offloading in OpenMP 
 using a shared memory remote procedure call mechanism. That is, we can execute 
-functions on the host originating from the device.
+functions on the host originating from the device. This uses a standalone 
+version of the RPC library provided by the LLVM libc project at time of writing.
 
 .. contents::
   :local:

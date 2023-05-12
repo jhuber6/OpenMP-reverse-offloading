@@ -28,7 +28,7 @@ set(OFFLOADING_FLAGS
     -fopenmp
     --offload-arch=native)
 
-add_executable(reverse main.cpp reverse_offloading.cpp)
+add_executable(reverse main.cpp client.cpp server.cpp)
 set_target_properties(reverse PROPERTIES CXX_STANDARD 17)
 target_include_directories(reverse PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_options(reverse PRIVATE ${COMPILER_WARNINGS} ${OFFLOADING_FLAGS})
