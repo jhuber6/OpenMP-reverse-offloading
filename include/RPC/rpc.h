@@ -454,7 +454,6 @@ LIBC_INLINE void Port<T>::send_n(const void *const *src, uint64_t *size) {
 /// thread private pointers to the underlying value.
 template <bool T>
 LIBC_INLINE void Port<T>::send_n(const void *src, uint64_t size) {
-  static_assert(is_process_gpu(), "Only valid when running on the GPU");
   const void **src_ptr = &src;
   uint64_t *size_ptr = &size;
   send_n(src_ptr, size_ptr);

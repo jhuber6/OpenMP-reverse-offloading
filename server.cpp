@@ -17,13 +17,14 @@ void run_server(std::future<void> run) {
 
     switch (port->get_opcode()) {
     case Opcode::EXECUTE: {
-      uintptr_t ptr;
-      port->recv([&](rpc::Buffer *buffer) {
-        ptr = reinterpret_cast<uintptr_t>(buffer->data[0]);
+      uint64_t args_sizes[rpc::MAX_LANE_SIZE] = {0};
+      void *args[rpc::MAX_LANE_SIZE] = {0};
+      port->recv_n(args, args_sizes,
+                   [](uint64_t size) { return new char[size]; });
+      port->recv_and_send([&](rpc::Buffer *buffer, uint32_t id) {
+        auto fn = reinterpret_cast<int (*)(void *, uint64_t)>(buffer->data[0]);
+        buffer->data[0] = fn(args[id], args_sizes[id]);
       });
-      auto fn = reinterpret_cast<int (*)()>(ptr);
-      auto result = fn();
-      port->send([&](rpc::Buffer *buffer) { buffer->data[0] = result; });
       break;
     }
     default:

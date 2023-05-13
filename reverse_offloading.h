@@ -16,8 +16,7 @@ void run_server(std::future<void> run);
 extern __llvm_libc::rpc::Client client;
 #pragma omp declare target to(client) device_type(nohost)
 
-extern void *omp_region_id;
-#pragma omp declare target to(omp_region_id)
+void init_client();
 
 void run_client();
 #pragma omp declare target to(run_client) device_type(nohost)
