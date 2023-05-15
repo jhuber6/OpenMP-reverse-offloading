@@ -7,9 +7,12 @@
 enum Opcode : uint16_t {
   NOOP = 0,
   EXECUTE = 1,
+  COPY = 2,
 };
 
 extern __llvm_libc::rpc::Server server;
+
+void *omp_map_lookup(void *in, uint32_t id);
 
 void run_server(std::future<void> run);
 
