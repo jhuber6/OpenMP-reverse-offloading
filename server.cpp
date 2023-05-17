@@ -35,7 +35,7 @@ void run_server(std::future<void> run) {
       });
       break;
     }
-    case Opcode::COPY: {
+    case Opcode::COPY_TO: {
       uint64_t sizes[rpc::MAX_LANE_SIZE] = {0};
       void *data[rpc::MAX_LANE_SIZE] = {0};
       port->recv_n(data, sizes, [](uint64_t size) { return new char[size]; });
@@ -43,6 +43,17 @@ void run_server(std::future<void> run) {
         pointer_map[std::make_pair(reinterpret_cast<uintptr_t>(buffer->data[0]),
                                    id)] = reinterpret_cast<uintptr_t>(data[id]);
       });
+      break;
+    }
+    case Opcode::COPY_FROM: {
+      uint64_t sizes[rpc::MAX_LANE_SIZE] = {0};
+      void *data[rpc::MAX_LANE_SIZE] = {0};
+      port->recv([&](rpc::Buffer *buffer, uint32_t id) {
+        data[id] = reinterpret_cast<void *>(pointer_map[std::make_pair(
+            reinterpret_cast<uintptr_t>(buffer->data[0]), id)]);
+        sizes[id] = buffer->data[1];
+      });
+      port->send_n(data, sizes);
       break;
     }
     default: {

@@ -1,3 +1,5 @@
+#include <cassert>
+#include <chrono>
 #include <cstdio>
 #include <future>
 #include <omp.h>
@@ -31,9 +33,36 @@ int main() {
   std::thread st(run_server, run.get_future());
   st.detach();
 
-#pragma omp target teams num_teams(4)
+  printf("Running basic functionality\n");
+  int32_t results[16] = {0};
+#pragma omp target teams num_teams(4) map(from : results[ : 16])
 #pragma omp parallel num_threads(4)
-  run_client();
+  {
+    results[omp_get_thread_num() + omp_get_num_teams() * omp_get_team_num()] =
+        run_client_basic();
+  }
+
+  for (int i = 0; i < 16; ++i)
+    if (results[i] != i)
+      printf("Return value %d did not match id %d\n", results[i], i);
+
+  printf("Checking latency\n");
+  constexpr int REPS = 100;
+  constexpr int TEAMS = 8;
+  for (int i = 1; i <= TEAMS; ++i) {
+    auto begin = std::chrono::high_resolution_clock::now();
+#pragma omp target teams num_teams(i)
+#pragma omp parallel num_threads(lane_size)
+    {
+      for (int i = 0; i < REPS; ++i)
+        run_client_empty();
+    }
+    auto end = std::chrono::high_resolution_clock::now();
+    printf("Average latency per RPC call with %d teams: %ld ns\n", i,
+           std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin)
+                   .count() /
+               REPS);
+  }
 
   run.set_value();
   omp_free(shared_ptr, llvm_omp_target_shared_mem_alloc);

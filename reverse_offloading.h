@@ -7,7 +7,8 @@
 enum Opcode : uint16_t {
   NOOP = 0,
   EXECUTE = 1,
-  COPY = 2,
+  COPY_TO = 2,
+  COPY_FROM = 3,
 };
 
 extern __llvm_libc::rpc::Server server;
@@ -21,7 +22,10 @@ extern __llvm_libc::rpc::Client client;
 
 void init_client();
 
-void run_client();
-#pragma omp declare target to(run_client) device_type(nohost)
+int run_client_basic();
+#pragma omp declare target to(run_client_basic) device_type(nohost)
+
+void run_client_empty();
+#pragma omp declare target to(run_client_empty) device_type(nohost)
 
 #endif

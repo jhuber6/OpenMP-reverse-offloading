@@ -20,3 +20,4 @@ least compatible with version ``17.0.0``.
   
   $ cmake ../ -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release
   $ make -j
+  $ ./reverse
