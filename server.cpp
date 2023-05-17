@@ -56,6 +56,15 @@ void run_server(std::future<void> run) {
       port->send_n(data, sizes);
       break;
     }
+    case Opcode::STREAM: {
+      uint64_t sizes[rpc::MAX_LANE_SIZE] = {0};
+      void *data[rpc::MAX_LANE_SIZE] = {0};
+      port->recv_n(data, sizes, [](uint64_t size) { return new char[size]; });
+      for (uint64_t i = 0; i < rpc::MAX_LANE_SIZE; ++i)
+        if (data[i])
+          delete[] reinterpret_cast<uint8_t *>(data[i]);
+      break;
+    }
     default: {
       port->recv([](rpc::Buffer *) {});
       break;

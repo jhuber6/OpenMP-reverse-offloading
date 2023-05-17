@@ -110,3 +110,10 @@ int run_client_basic() {
 
 void run_client_empty() { omp_reverse_offload(omp_device_ref_1, nullptr, 0); }
 #pragma omp declare target to(run_client_empty) device_type(nohost)
+
+void streaming(void *data, uint64_t size) {
+  rpc::Client::Port port = client.open<STREAM>();
+  port.send_n(data, size);
+  port.close();
+}
+#pragma omp declare target to(streaming) device_type(nohost)

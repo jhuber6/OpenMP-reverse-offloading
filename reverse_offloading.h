@@ -9,6 +9,7 @@ enum Opcode : uint16_t {
   EXECUTE = 1,
   COPY_TO = 2,
   COPY_FROM = 3,
+  STREAM = 4,
 };
 
 extern __llvm_libc::rpc::Server server;
@@ -27,5 +28,8 @@ int run_client_basic();
 
 void run_client_empty();
 #pragma omp declare target to(run_client_empty) device_type(nohost)
+
+void streaming(void *data, uint64_t size);
+#pragma omp declare target to(streaming) device_type(nohost)
 
 #endif

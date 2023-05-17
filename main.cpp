@@ -64,6 +64,21 @@ int main() {
                REPS);
   }
 
+  for (uint64_t size = 1024; size <= 1024 * 1024; size *= 2) {
+    uint8_t *data = new uint8_t[size];
+    auto begin = std::chrono::high_resolution_clock::now();
+#pragma omp target teams num_teams(1) map(to : data[ : size])
+#pragma omp parallel num_threads(1)
+    {
+      for (int i = 0; i < REPS; ++i)
+        streaming(data, size);
+    }
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> fsec = end - begin;
+    printf("Average bandwidth to transfer %ld KiB using the RPC: %f MiB/s\n",
+           size / 1024, ((size / (1024.0 * 1024.0)) * REPS) / fsec.count());
+  }
+
   run.set_value();
   omp_free(shared_ptr, llvm_omp_target_shared_mem_alloc);
 }
