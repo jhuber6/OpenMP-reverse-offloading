@@ -2,7 +2,7 @@
 #define REVERSE_OFFLOADING_H
 
 #include "include/RPC/rpc.h"
-#include <future>
+#include <atomic>
 
 enum Opcode : uint16_t {
   NOOP = 0,
@@ -16,7 +16,7 @@ extern __llvm_libc::rpc::Server server;
 
 void *omp_map_lookup(void *in, uint32_t id);
 
-void run_server(std::future<void> run);
+void run_server(std::atomic<int32_t> *run);
 
 extern __llvm_libc::rpc::Client client;
 #pragma omp declare target to(client) device_type(nohost)

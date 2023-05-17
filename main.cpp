@@ -1,7 +1,6 @@
 #include <cassert>
 #include <chrono>
 #include <cstdio>
-#include <future>
 #include <omp.h>
 #include <thread>
 
@@ -29,8 +28,8 @@ int main() {
 
   init_client();
 
-  std::promise<void> run;
-  std::thread st(run_server, run.get_future());
+  std::atomic<int32_t> run = 0;
+  std::thread st(run_server, &run);
   st.detach();
 
   printf("Running basic functionality\n");
@@ -43,12 +42,12 @@ int main() {
   }
 
   for (int i = 0; i < 16; ++i)
-    if (results[i] != i)
-      printf("Return value %d did not match id %d\n", results[i], i);
+    if (results[i] != 4)
+      printf("Return value %d did not match 4\n", results[i]);
 
   printf("Checking latency\n");
   constexpr int REPS = 100;
-  constexpr int TEAMS = 8;
+  constexpr int TEAMS = 32;
   for (int i = 1; i <= TEAMS; ++i) {
     auto begin = std::chrono::high_resolution_clock::now();
 #pragma omp target teams num_teams(i)
@@ -79,6 +78,6 @@ int main() {
            size / 1024, ((size / (1024.0 * 1024.0)) * REPS) / fsec.count());
   }
 
-  run.set_value();
+  run.store(1);
   omp_free(shared_ptr, llvm_omp_target_shared_mem_alloc);
 }

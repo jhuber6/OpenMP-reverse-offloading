@@ -16,9 +16,10 @@ void *omp_map_lookup(void *in, uint32_t id) {
       pointer_map[std::make_pair(reinterpret_cast<uintptr_t>(in), id)]);
 }
 
-void run_server(std::future<void> run) {
-  while (run.wait_for(std::chrono::nanoseconds(256)) ==
-         std::future_status::timeout) {
+void run_server(std::atomic<int32_t> *run) {
+  for (;;) {
+    if (run->load())
+      return;
     auto port = server.try_open();
     if (!port)
       continue;

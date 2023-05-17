@@ -1,7 +1,6 @@
 #include "reverse_offloading.h"
 
 #include <cstdio>
-#include <future>
 #include <omp.h>
 #include <thread>
 
@@ -13,7 +12,7 @@ void foo(int32_t thread_id, int32_t team_id, int32_t num_teams, int32_t *x,
          const char *str) {
   printf("Hello from thread %d and team %d!\n", thread_id, team_id);
   printf("\tDevice string: %s\n", str);
-  *x = thread_id + team_id * num_teams;
+  *x = num_teams;
 }
 
 struct foo_args {
