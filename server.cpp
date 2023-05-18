@@ -7,13 +7,12 @@
 
 using namespace __llvm_libc;
 
-static std::map<std::pair<uintptr_t, uint32_t>, uintptr_t> pointer_map;
+static std::map<uintptr_t, uintptr_t> pointer_map;
 
 rpc::Server server;
 
-void *omp_map_lookup(void *in, uint32_t id) {
-  return reinterpret_cast<void *>(
-      pointer_map[std::make_pair(reinterpret_cast<uintptr_t>(in), id)]);
+void *omp_map_lookup(void *in, uint32_t) {
+  return reinterpret_cast<void *>(pointer_map[reinterpret_cast<uintptr_t>(in)]);
 }
 
 void run_server(std::atomic<int32_t> *run) {
@@ -41,8 +40,8 @@ void run_server(std::atomic<int32_t> *run) {
       void *data[rpc::MAX_LANE_SIZE] = {0};
       port->recv_n(data, sizes, [](uint64_t size) { return new char[size]; });
       port->recv([&](rpc::Buffer *buffer, uint32_t id) {
-        pointer_map[std::make_pair(reinterpret_cast<uintptr_t>(buffer->data[0]),
-                                   id)] = reinterpret_cast<uintptr_t>(data[id]);
+        pointer_map[reinterpret_cast<uintptr_t>(buffer->data[0])] =
+            reinterpret_cast<uintptr_t>(data[id]);
       });
       break;
     }
@@ -50,8 +49,8 @@ void run_server(std::atomic<int32_t> *run) {
       uint64_t sizes[rpc::MAX_LANE_SIZE] = {0};
       void *data[rpc::MAX_LANE_SIZE] = {0};
       port->recv([&](rpc::Buffer *buffer, uint32_t id) {
-        data[id] = reinterpret_cast<void *>(pointer_map[std::make_pair(
-            reinterpret_cast<uintptr_t>(buffer->data[0]), id)]);
+        data[id] = reinterpret_cast<void *>(
+            pointer_map[reinterpret_cast<uintptr_t>(buffer->data[0])]);
         sizes[id] = buffer->data[1];
       });
       port->send_n(data, sizes);

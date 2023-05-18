@@ -45,22 +45,39 @@ int main() {
     if (results[i] != 4)
       printf("Return value %d did not match 4\n", results[i]);
 
-  printf("Checking latency\n");
-  constexpr int REPS = 100;
-  constexpr int TEAMS = 32;
+  int repetitions = 10000;
+  auto begin = std::chrono::high_resolution_clock::now();
+  for (int i = 0; i < repetitions; i++) {
+#pragma omp target
+    ;
+  }
+  auto end = std::chrono::high_resolution_clock::now();
+  auto latency = end - begin;
+  printf("Average latency for kernel launch %ld",
+         std::chrono::duration_cast<std::chrono::nanoseconds>(latency).count() /
+             repetitions);
+
+  printf("Checking RPC latency\n");
+  constexpr int TEAMS = 8;
   for (int i = 1; i <= TEAMS; ++i) {
     auto begin = std::chrono::high_resolution_clock::now();
 #pragma omp target teams num_teams(i)
 #pragma omp parallel num_threads(lane_size)
     {
-      for (int i = 0; i < REPS; ++i)
+      for (int i = 0; i < repetitions; ++i)
         run_client_empty();
     }
     auto end = std::chrono::high_resolution_clock::now();
-    printf("Average latency per RPC call with %d teams: %ld ns\n", i,
-           std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin)
+    printf("Average latency of RPC call relative to kernel launch with %d "
+           "teams: %f\n ",
+           i,
+           static_cast<double>(
+               std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin)
                    .count() /
-               REPS);
+               repetitions) /
+               (std::chrono::duration_cast<std::chrono::nanoseconds>(latency)
+                    .count() /
+                repetitions));
   }
 
   for (uint64_t size = 1024; size <= 1024 * 1024; size *= 2) {
@@ -69,13 +86,14 @@ int main() {
 #pragma omp target teams num_teams(1) map(to : data[ : size])
 #pragma omp parallel num_threads(1)
     {
-      for (int i = 0; i < REPS; ++i)
+      for (int i = 0; i < repetitions / 100; ++i)
         streaming(data, size);
     }
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> fsec = end - begin;
     printf("Average bandwidth to transfer %ld KiB using the RPC: %f MiB/s\n",
-           size / 1024, ((size / (1024.0 * 1024.0)) * REPS) / fsec.count());
+           size / 1024,
+           ((size / (1024.0 * 1024.0)) * repetitions / 100) / fsec.count());
   }
 
   run.store(1);
