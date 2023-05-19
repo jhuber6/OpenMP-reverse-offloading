@@ -53,7 +53,7 @@ int main() {
   }
   auto end = std::chrono::high_resolution_clock::now();
   auto latency = end - begin;
-  printf("Average latency for kernel launch %ld",
+  printf("Average latency for kernel launch %ld\n",
          std::chrono::duration_cast<std::chrono::nanoseconds>(latency).count() /
              repetitions);
 

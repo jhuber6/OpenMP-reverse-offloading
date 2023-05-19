@@ -90,7 +90,8 @@ static uint64_t strlen(const char *str) {
 
 int run_client_basic() {
   static const char *strs[] = {
-      "one", "two", "three",
+      "one", "two",
+      "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
       "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!?"};
   const char *str =
       strs[(omp_get_thread_num() + omp_get_num_teams() * omp_get_team_num()) %
