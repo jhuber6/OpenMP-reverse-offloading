@@ -37,13 +37,13 @@ int main() {
 #pragma omp target teams num_teams(4) map(from : results[ : 16])
 #pragma omp parallel num_threads(4)
   {
-    results[omp_get_thread_num() + omp_get_num_teams() * omp_get_team_num()] =
-        run_client_basic();
+    run_client_basic(&results[omp_get_thread_num() +
+                              omp_get_num_teams() * omp_get_team_num()]);
   }
 
   for (int i = 0; i < 16; ++i)
-    if (results[i] != 4)
-      printf("Return value %d did not match 4\n", results[i]);
+    if (results[i] != i)
+      printf("Return value %d did not match %d\n", results[i], i);
 
   int repetitions = 10000;
   auto begin = std::chrono::high_resolution_clock::now();

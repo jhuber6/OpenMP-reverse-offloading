@@ -12,7 +12,7 @@ void foo(int32_t thread_id, int32_t team_id, int32_t num_teams, int32_t *x,
          const char *str) {
   printf("Hello from thread %d and team %d!\n", thread_id, team_id);
   printf("\tDevice string: %s\n", str);
-  *x = num_teams;
+  *x = thread_id + team_id * num_teams;
 }
 
 struct foo_args {
@@ -47,14 +47,16 @@ void init_client() {
 #pragma omp target update to(omp_device_ref_1)
 }
 
-void omp_reverse_offload(void *fn, void *args, uint64_t args_size) {
+void omp_reverse_offload(void *fn, void *args, uint64_t args_size,
+                         bool nowait) {
   rpc::Client::Port port = client.open<EXECUTE>();
   port.send_n(args, args_size);
-  port.send_and_recv(
-      [&](rpc::Buffer *buffer) {
-        buffer->data[0] = reinterpret_cast<uintptr_t>(fn);
-      },
-      [](rpc::Buffer *) {});
+  port.send([&](rpc::Buffer *buffer) {
+    buffer->data[0] = reinterpret_cast<uintptr_t>(fn);
+    buffer->data[1] = nowait;
+  });
+  if (!nowait)
+    port.recv([](rpc::Buffer *) {});
   port.close();
 }
 #pragma omp declare target to(omp_reverse_offload) device_type(nohost)
@@ -88,7 +90,7 @@ static uint64_t strlen(const char *str) {
 }
 #pragma omp declare target to(strlen) device_type(nohost)
 
-int run_client_basic() {
+void run_client_basic(int *x) {
   static const char *strs[] = {
       "one", "two",
       "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
@@ -96,19 +98,19 @@ int run_client_basic() {
   const char *str =
       strs[(omp_get_thread_num() + omp_get_num_teams() * omp_get_team_num()) %
            (sizeof(strs) / sizeof(char *))];
-  int32_t x = 0;
   map_to_host(str, strlen(str));
-  map_to_host(&x, sizeof(int32_t));
+  map_to_host(x, sizeof(int32_t));
   foo_args args = {omp_get_thread_num(), omp_get_team_num(),
-                   omp_get_num_teams(), &x,
+                   omp_get_num_teams(), x,
                    const_cast<void *>(reinterpret_cast<const void *>(str))};
-  omp_reverse_offload(omp_device_ref, &args, sizeof(foo_args));
-  map_from_host(&x, sizeof(int32_t));
-  return x;
+  omp_reverse_offload(omp_device_ref, &args, sizeof(foo_args), false);
+  map_from_host(x, sizeof(int32_t));
 }
 #pragma omp declare target to(run_client_basic) device_type(nohost)
 
-void run_client_empty() { omp_reverse_offload(omp_device_ref_1, nullptr, 0); }
+void run_client_empty() {
+  omp_reverse_offload(omp_device_ref_1, nullptr, 0, false);
+}
 #pragma omp declare target to(run_client_empty) device_type(nohost)
 
 void streaming(void *data, uint64_t size) {

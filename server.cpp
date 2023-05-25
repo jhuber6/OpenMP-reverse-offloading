@@ -29,10 +29,14 @@ void run_server(std::atomic<int32_t> *run) {
       void *args[rpc::MAX_LANE_SIZE] = {0};
       port->recv_n(args, args_sizes,
                    [](uint64_t size) { return new char[size]; });
-      port->recv_and_send([&](rpc::Buffer *buffer, uint32_t id) {
+      bool nowait = false;
+      port->recv([&](rpc::Buffer *buffer, uint32_t id) {
         auto fn = reinterpret_cast<int (*)(void *, uint64_t)>(buffer->data[0]);
         buffer->data[0] = fn(args[id], id);
+        nowait = buffer->data[1];
       });
+      if (!nowait)
+        port->send([&](rpc::Buffer *) {});
       break;
     }
     case Opcode::COPY_TO: {

@@ -23,7 +23,7 @@ extern __llvm_libc::rpc::Client client;
 
 void init_client();
 
-int run_client_basic();
+void run_client_basic(int *x);
 #pragma omp declare target to(run_client_basic) device_type(nohost)
 
 void run_client_empty();
